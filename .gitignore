@@ -12,3 +12,5 @@
 *.out
 
 *.sqlite
+*.py
+*.txt
