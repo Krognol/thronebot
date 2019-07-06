@@ -20,11 +20,22 @@ var (
 	discordBotKey     = flag.String("t", "", "Discord bot key")
 	githubAPIKey      = flag.String("git", "", "Github API key. For archiving of pins")
 	githubArchiveRepo = flag.String("rep", "", "Repo name")
-	dbName            = flag.String("db", "db.sqlite", "SQLite DB file name")
+	dbName            = flag.String("db", "db.sqlite", "Path to SQLite DB file")
+	logFile           = flag.String("log", "", "Path to file to print logging to")
 )
 
 func main() {
-	log.SetOutput(os.Stdout)
+	if *logFile == "" {
+		log.SetOutput(os.Stdout)
+	} else {
+		f, err := os.Open(*logFile)
+		if err != nil {
+			// Can't open/create file, something's wrong
+			panic(err)
+		}
+		log.SetOutput(f)
+		defer f.Close()
+	}
 
 	db, err := sql.Open("sqlite3", *dbName)
 	if err != nil {
