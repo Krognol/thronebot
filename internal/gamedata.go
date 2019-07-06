@@ -1,5 +1,6 @@
 package internal
 
+// Weapons is a map of in-game weapons with their corresponding IDs
 var Weapons = map[string]int{
 	"None":                  0,
 	"Revolver":              1,
@@ -131,6 +132,7 @@ var Weapons = map[string]int{
 	"GoldenFrogPistol":      127,
 }
 
+// Mutations is a map of in-game mutations with their corresponding IDs
 var Mutations = map[string]int{
 	"None":             0,
 	"RhinoSkin":        1,
@@ -164,6 +166,7 @@ var Mutations = map[string]int{
 	"HeavyHeart":       29,
 }
 
+// Chars is a map of in-game characters and their corresponding IDs
 var Chars = map[string]int{
 	"Random":   0,
 	"Fish":     1,
@@ -183,6 +186,7 @@ var Chars = map[string]int{
 	"Frog":     15,
 }
 
+// Crowns is a map of in-game crowns with their corresponding IDs
 var Crowns = map[string]int{
 	"Random":     0,
 	"None":       1,
