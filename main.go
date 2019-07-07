@@ -59,6 +59,11 @@ func main() {
 
 	// Commands
 	bot.Route.On("pingdb", pingdbHandler(bot.DB)).Use(internal.ElevatedUser).Desc("Pings the database for a connection.")
+
+	if *githubAPIKey != "" {
+		// TODO register archiving routes
+	}
+
 	var BotID = ses.State.User.ID
 
 	bot.Ses.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -130,10 +135,7 @@ func weeklySuggestionHandler(db *sql.DB) router.HandlerFunc {
 		err = insertSuggestion(db, ctx.Msg.Author.ID, char, weap, crown, skin)
 		if err != nil {
 			ctx.Reply("Failed to save suggestion.")
-			return
 		}
-
-		incrementUserSuggestionCount(db, ctx.Msg.Author.ID)
 	}
 }
 
@@ -195,43 +197,18 @@ func insertSuggestion(db *sql.DB, uid, char, weap, crown string, skin bool) erro
 		log.Println("inserSuggestion: failed to insert into table stmt:", err)
 		return err
 	}
-	return nil
+
+	return updateSuggestionCount(db, uid)
 }
 
-func incrementUserSuggestionCount(db *sql.DB, uid string) {
-	rows, err := db.Query("SELECT COUNT(*) FROM user_suggestions WHERE user = ?;", uid)
+func updateSuggestionCount(db *sql.DB, uid string) (err error) {
+	var stmt *sql.Stmt
+	stmt, err = db.Prepare("INSERT INTO user_suggestions(id, count) VALUES(?, ?) ON CONFLICT(id) DO UPDATE SET count = count + 1;")
 	if err != nil {
-		log.Println("incrementUserSuggestionCount: failed to retrieve row count:", err)
-		return
+		log.Println("updateSuggestionCount: failed to prepare stmt:", err)
+		return err
 	}
 
-	var count int
-	for rows.Next() {
-		rows.Scan(&count)
-	}
-
-	if count == 0 {
-		stmt, err := db.Prepare("INSERT INTO user_suggestions VALUES(?, ?);")
-		if err != nil {
-			log.Panicln("incrementUserSuggestionCount: failed to prepare stmt:", err)
-			return
-		}
-
-		_, err = stmt.Exec(uid, 1)
-		if err != nil {
-			log.Println("incrementUserSuggestionCount: failed to execute insert:", err)
-			return
-		}
-	} else {
-		stmt, err := db.Prepare("UPDATE user_suggestions SET count = count + 1 WHERE user = ?;")
-		if err != nil {
-			log.Println("incrementUserSuggestionCount: failed to prepare update stmt:", err)
-			return
-		}
-
-		_, err = stmt.Exec(uid)
-		if err != nil {
-			log.Println("incrementUserSuggestionCount: failed to update user count:", err)
-		}
-	}
+	_, err = stmt.Exec(uid, 1)
+	return err
 }
