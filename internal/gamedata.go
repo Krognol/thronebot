@@ -1,9 +1,9 @@
 package internal
 
-type Map map[string]int
+type itemMap map[string]int
 
 // Weapons is a map of in-game weapons with their corresponding IDs
-var Weapons = Map{
+var Weapons = itemMap{
 	"none":                    0,
 	"revolver":                1,
 	"triple machinegun":       2,
@@ -135,7 +135,7 @@ var Weapons = Map{
 }
 
 // Mutations is a map of in-game mutations with their corresponding IDs
-var Mutations = Map{
+var Mutations = itemMap{
 	"none":              0,
 	"rhino skin":        1,
 	"extra feet":        2,
@@ -169,7 +169,7 @@ var Mutations = Map{
 }
 
 // Chars is a map of in-game characters and their corresponding IDs
-var Chars = Map{
+var Chars = itemMap{
 	"random":   0,
 	"fish":     1,
 	"crystal":  2,
@@ -189,7 +189,7 @@ var Chars = Map{
 }
 
 // Crowns is a map of in-game crowns with their corresponding IDs
-var Crowns = Map{
+var Crowns = itemMap{
 	"random":     0,
 	"none":       1,
 	"death":      2,
@@ -207,7 +207,7 @@ var Crowns = Map{
 }
 
 // NameToID returns the ID of the thing
-func (m Map) NameToID(name string) int {
+func (m itemMap) NameToID(name string) int {
 	if i, ok := m[name]; ok {
 		return i
 	}
@@ -215,7 +215,7 @@ func (m Map) NameToID(name string) int {
 }
 
 // IDToName returns the name of the ID
-func (m Map) IDToName(id int) string {
+func (m itemMap) IDToName(id int) string {
 	for k, v := range m {
 		if v == id {
 			return k
