@@ -28,6 +28,12 @@ func NewRoute() *Route {
 	return &Route{dgrouter.New()}
 }
 
+// Desc sets the description of the route
+func (r *Route) Desc(desc string) *Route {
+	r.Route.Desc(desc)
+	return r
+}
+
 // On matches a Route with a name
 func (r *Route) On(name string, handler HandlerFunc) *Route {
 	return &Route{r.Route.On(name, WrapHandler(handler))}
