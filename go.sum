@@ -1,3 +1,5 @@
+github.com/Krognol/tbapi v0.0.0-20190707220836-30ff72469981 h1:aulYkNpk8n209jI9SQUWBqiAhloj8zX1O6IFKBSFqPw=
+github.com/Krognol/tbapi v0.0.0-20190707220836-30ff72469981/go.mod h1:O4/o8vvdj5DZVqawxFu841Iy8BhKhSbqJefZQxcUrIQ=
 github.com/Necroforger/dgrouter v0.0.0-20190528143456-040421b5a83e h1:xuNW6yNogKnVFtgYWZIBNxlcnMMlIhegVxwNRDp8HhM=
 github.com/Necroforger/dgrouter v0.0.0-20190528143456-040421b5a83e/go.mod h1:FdMxPfOp4ppZW2OJjLagSMri7g5k9luvTm7Y3aIxQSc=
 github.com/bwmarrin/discordgo v0.19.0 h1:kMED/DB0NR1QhRcalb85w0Cu3Ep2OrGAqZH1R5awQiY=

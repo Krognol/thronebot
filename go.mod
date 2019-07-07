@@ -3,6 +3,7 @@ module github.com/Krognol/thronebot
 go 1.12
 
 require (
+	github.com/Krognol/tbapi v0.0.0-20190707220836-30ff72469981
 	github.com/Necroforger/dgrouter v0.0.0-20190528143456-040421b5a83e // indirect
 	github.com/bwmarrin/discordgo v0.19.0
 	github.com/mattn/go-sqlite3 v1.10.0
