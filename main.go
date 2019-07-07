@@ -152,6 +152,8 @@ func isBanned(db *sql.DB, char, weap, crown string) (bool, error) {
 		return false, err
 	}
 
+	defer rows.Close()
+
 	// Should maybe cache result
 	var bannedChar, bannedCrown, bannedWeap string
 	for rows.Next() {
@@ -171,6 +173,8 @@ func getUserSuggestionCount(db *sql.DB, id string) int {
 		return -1
 	}
 
+	defer rows.Close()
+
 	var count int
 	for rows.Next() {
 		rows.Scan(&count)
@@ -186,6 +190,8 @@ func insertSuggestion(db *sql.DB, uid, char, weap, crown string, skin bool) erro
 		log.Println("inserSuggestion: failed to prepare stmt:", err)
 		return err
 	}
+
+	defer stmt.Close()
 
 	useSkin := 0
 	if skin {
@@ -208,6 +214,8 @@ func updateSuggestionCount(db *sql.DB, uid string) (err error) {
 		log.Println("updateSuggestionCount: failed to prepare stmt:", err)
 		return err
 	}
+
+	defer stmt.Close()
 
 	_, err = stmt.Exec(uid, 1)
 	return err
