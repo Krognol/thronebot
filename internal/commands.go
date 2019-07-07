@@ -17,7 +17,7 @@ func ElevatedUser(fn router.HandlerFunc) router.HandlerFunc {
 
 		perms, err := ctx.Ses.UserChannelPermissions(ctx.Msg.Author.ID, ctx.Msg.ChannelID)
 		if err != nil {
-			log.Print("commands: failed to retrieve channel permissions:", err)
+			log.Println("commands: failed to retrieve channel permissions:", err)
 			ctx.Reply("Could not retrieve channel permissions: ", err)
 			return
 		}
