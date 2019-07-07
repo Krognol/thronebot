@@ -4,12 +4,15 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"flag"
+	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
+	"github.com/Krognol/tbapi"
 	"github.com/Krognol/thronebot/internal"
 	"github.com/Krognol/thronebot/internal/router"
 	"github.com/bwmarrin/discordgo"
@@ -38,27 +41,44 @@ func main() {
 		defer f.Close()
 	}
 
+	if *discordBotKey == "" {
+		log.Fatal("Discord bot key can't be nil:", flag.ErrHelp)
+	}
+
+	if *tbAPIKey == "" {
+		log.Fatal("Missing Thronebutt API key.")
+	}
+
 	db, err := sql.Open("sqlite3", *dbName)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if *discordBotKey == "" {
-		log.Fatal("Discord bot key can't be nil:", flag.ErrHelp)
-	}
+	defer db.Close()
 
 	ses, err := discordgo.New(*discordBotKey)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer db.Close()
 	defer ses.Close()
 
 	bot := internal.NewBot(ses, db, router.NewRoute())
 
+	tbClient := tbapi.New(*tbAPIKey)
 	// Commands
 	bot.Route.On("pingdb", pingdbHandler(bot.DB)).Use(internal.ElevatedUser).Desc("Pings the database for a connection.")
+
+	bot.Route.On("weekly", nil).
+		On("suggest", weeklySuggestionHandler(bot.DB)).
+		Desc("Suggest a weekly. Ex. `steroids/b/grenade launcher/crown of death`").
+		// TODO print banned things
+		On("banned", nil).Desc("Print banned selections.").
+		// TODO
+		On("ban", nil).Use(internal.ElevatedUser).
+		On("enable", weeklyEnableDisableHandler(tbClient, true)).Use(internal.ElevatedUser).
+		On("disable", weeklyEnableDisableHandler(tbClient, false)).Use(internal.ElevatedUser).
+		On("set", nil).Use(internal.ElevatedUser)
 
 	if *githubAPIKey != "" {
 		// TODO register archiving routes
@@ -72,7 +92,69 @@ func main() {
 
 	closer := make(chan os.Signal, 1)
 	signal.Notify(closer, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+
+	fmt.Println("Bot is running. Ctrl+C to quit.")
 	<-closer
+}
+
+func weeklyEnableDisableHandler(tbc *tbapi.Client, enable bool) router.HandlerFunc {
+	// enable true, disable false
+	return func(ctx *router.Context) {
+		var (
+			res *http.Response
+			err error
+		)
+
+		if enable {
+			res, err = tbc.EnableWeekly()
+		} else {
+			res, err = tbc.DisableWeekly()
+		}
+
+		defer res.Body.Close()
+		if err != nil {
+			log.Println("weeklyEnableDisable: error enabling/disabling weekly:", err)
+		}
+		ctx.Reply("Got response:", res.Status)
+	}
+}
+
+func getBannedHandler(db *sql.DB) router.HandlerFunc {
+	return func(ctx *router.Context) {
+		rows, err := db.Query("SELECT * FROM weekly_banned;")
+		if err != nil {
+			log.Println("getBanned: failed to query db:", err)
+			ctx.Reply("Failed to retrieve banned items.")
+			return
+		}
+
+		defer rows.Close()
+
+		var (
+			char, crown, wep    string
+			chars, crowns, weps []string
+		)
+
+		// TODO find more efficient solution
+		for rows.Next() {
+			err = rows.Scan(&char, &crown, &wep)
+			if err != nil {
+				log.Fatal("getBanned: failed to scan row:", err)
+				ctx.Reply("Failed to retrieve banned items.")
+				return
+			}
+
+			chars = append(chars, char)
+			crowns = append(crowns, crown)
+			weps = append(weps, wep)
+		}
+
+		ctx.Reply(
+			"Currently banned items:\n\n**Characters:**\n  ", strings.Join(chars, ", "),
+			"\n**Crowns:**\n  ", strings.Join(crowns, ", "),
+			"**Weapons:**\n  ", strings.Join(weps, ", "),
+		)
+	}
 }
 
 func pingdbHandler(db *sql.DB) router.HandlerFunc {
@@ -101,7 +183,7 @@ func weeklySuggestionHandler(db *sql.DB) router.HandlerFunc {
 
 		var (
 			char  = build[0]
-			skin  = build[1] == "1"
+			skin  = build[1] == "b"
 			weap  = build[2]
 			crown = build[3]
 		)
@@ -208,15 +290,29 @@ func insertSuggestion(db *sql.DB, uid, char, weap, crown string, skin bool) erro
 }
 
 func updateSuggestionCount(db *sql.DB, uid string) (err error) {
-	var stmt *sql.Stmt
-	stmt, err = db.Prepare("INSERT INTO user_suggestions(id, count) VALUES(?, ?) ON CONFLICT(id) DO UPDATE SET count = count + 1;")
+	var (
+		tx   *sql.Tx
+		stmt *sql.Stmt
+	)
+
+	tx, err = db.Begin()
+	if err != nil {
+		log.Println("updateSuggestionCount: failed to begin Tx:", err)
+		return
+	}
+
+	stmt, err = tx.Prepare("INSERT INTO user_suggestions(id, count) VALUES(?, ?) ON CONFLICT(id) DO UPDATE SET count = count + 1;")
 	if err != nil {
 		log.Println("updateSuggestionCount: failed to prepare stmt:", err)
-		return err
+		return tx.Rollback()
 	}
 
 	defer stmt.Close()
 
 	_, err = stmt.Exec(uid, 1)
-	return err
+	if err != nil {
+		log.Println("updateSuggestionCount: failed to exec stmt:", err)
+		return tx.Rollback()
+	}
+	return tx.Commit()
 }
